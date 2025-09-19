@@ -22,7 +22,7 @@
 
 #include "Keyboard.h"
 #include "KeyboardLayout.h"
-#include <RP2040USB.h>
+#include <USB.h>
 
 #include "tusb.h"
 #include "class/hid/hid_device.h"
@@ -35,13 +35,16 @@ HID_Keyboard::HID_Keyboard(void) {
     bzero(&_keyReport, sizeof(_keyReport));
     _asciimap = KeyboardLayout_en_US;
     _ledCB = nullptr;
+    _running = false;
 }
 
 void HID_Keyboard::begin(const uint8_t *layout) {
     _asciimap = layout;
+    _running = true;
 }
 
 void HID_Keyboard::end(void) {
+    _running = false;
 }
 
 // press() adds the specified key (printing, non-printing, or modifier)
@@ -50,6 +53,9 @@ void HID_Keyboard::end(void) {
 // call release(), releaseAll(), or otherwise clear the report and resend.
 size_t HID_Keyboard::press(uint8_t k)
 {
+    if (!_running) {
+        return 0;
+    }
 	uint8_t i;
 	if (k >= 136) {			// it's a non-printing key (not a modifier)
 		k = k - 136;
@@ -100,6 +106,9 @@ size_t HID_Keyboard::press(uint8_t k)
 // it shouldn't be repeated any more.
 size_t HID_Keyboard::release(uint8_t k)
 {
+    if (!_running) {
+        return 0;
+    }
 	uint8_t i;
 	if (k >= 136) {			// it's a non-printing key (not a modifier)
 		k = k - 136;
@@ -137,18 +146,27 @@ size_t HID_Keyboard::release(uint8_t k)
 
 size_t HID_Keyboard::consumerPress(uint16_t k)
 {
+    if (!_running) {
+        return 0;
+    }
     sendConsumerReport(k);
     return 1;
 }
 
 size_t HID_Keyboard::consumerRelease()
 {
+    if (!_running) {
+        return 0;
+    }
     sendConsumerReport(0);
     return 1;
 }
 
 void HID_Keyboard::releaseAll(void)
 {
+    if (!_running) {
+        return;
+    }
 	_keyReport.keys[0] = 0;
 	_keyReport.keys[1] = 0;
 	_keyReport.keys[2] = 0;
@@ -161,6 +179,9 @@ void HID_Keyboard::releaseAll(void)
 
 size_t HID_Keyboard::write(uint8_t c)
 {
+    if (!_running) {
+        return 0;
+    }
 	uint8_t p = press(c);  // Keydown
 	delay(10);
 	release(c);            // Keyup
@@ -169,6 +190,9 @@ size_t HID_Keyboard::write(uint8_t c)
 }
 
 size_t HID_Keyboard::write(const uint8_t *buffer, size_t size) {
+    if (!_running) {
+        return 0;
+    }
 	size_t n = 0;
 	while (size--) {
 		if (*buffer != '\r') {
@@ -184,6 +208,9 @@ size_t HID_Keyboard::write(const uint8_t *buffer, size_t size) {
 }
 
 void HID_Keyboard::onLED(LedCallbackFcn fcn, void *cbData) {
+    if (!_running) {
+        return;
+    }
     _ledCB = fcn;
     _ledCBdata = cbData;
 }

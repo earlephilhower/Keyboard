@@ -188,8 +188,8 @@ protected:
 
 public:
   HID_Keyboard(void);
-  void begin(const uint8_t *layout = KeyboardLayout_en_US);
-  void end(void);
+  virtual void begin(const uint8_t *layout = KeyboardLayout_en_US);
+  virtual void end(void);
   size_t write(uint8_t k);
   size_t write(const uint8_t *buffer, size_t size);
   size_t press(uint8_t k);
@@ -202,4 +202,5 @@ public:
   void onLED(LedCallbackFcn fcn, void *cbData = nullptr);
   LedCallbackFcn _ledCB;
   void * _ledCBdata;
+  bool _running;
 };
